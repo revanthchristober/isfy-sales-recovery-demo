@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Recoverly — independent sales recovery demo
 
-## Getting Started
+This is a small backend and product demo for routing abandoned carts to sales reps and recording simulated recovered orders.
 
-First, run the development server:
+**Independent demo · Fake data · Simulated revenue**
+
+Every brand, rep, cart and order is fictional. The project contains no ISFY customer information and does not connect to real stores, calls, messages or payments.
+
+## Run it locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+pnpm dlx supabase start
+pnpm dlx supabase db reset --local
+cp .env.example .env.local
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `DEMO_EVENT_SIGNING_SECRET` in `.env.local`. Use the local server-only secret printed by the Supabase CLI and set the signing secret to at least 32 random characters. Keep both secrets on the server; do not add a `NEXT_PUBLIC_` prefix.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open http://localhost:3000. The app creates a random 24-hour visitor session and a separate copy of its two fictional brands and reps. The browser receives only an HttpOnly session cookie; Postgres stores its SHA-256 hash. **Start again** creates a new isolated session.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Checks
 
-## Learn More
+Run the checks against the local Supabase stack:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm lint
+pnpm typecheck
+export DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+pnpm test:db
+pnpm test:concurrency
+pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The SQL checks cover duplicate events, changed event contents, recovery totals, access boundaries, database permissions and rollback. The concurrency check uses parallel connections to real Postgres for competing claims, suppression and repeated recovered orders. The browser test runs the visitor flow, reloads it, and checks a second visitor has an empty session. GitHub Actions runs the same checks with a fresh local Supabase stack.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Try the one-minute demo
 
-## Deploy on Vercel
+1. Choose a fictional brand and select **Add fake cart**.
+2. Claim the eligible lead as one of its fictional reps.
+3. Select **Simulate sale** to record a fake recovered order.
+4. Try **Duplicate cart**, **Two reps claim at once**, and **Repeat a sale event** to see the safeguards.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The screen reloads its state from the current visitor session. It does not call stores, send messages, place calls or process payments. Suppression applies to an individual fake lead in this demo.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API routes
+
+- `GET /api/demo/state` returns only the current visitor's brands, reps, leads, recoveries and recent activity.
+- `POST /api/demo/cart-events` accepts a signed fake abandoned-cart event.
+- `POST /api/demo/leads/:leadId/claim` and `/suppress` change one scoped lead.
+- `POST /api/demo/recovery-events` accepts a signed fake recovered-order event.
+- `POST /api/demo/scenarios` runs server-signed scenarios for the screen.
+- `POST /api/demo/session/reset` starts a separate fresh visitor session.
+
+## Data boundaries
+
+- Every record is scoped to a 24-hour visitor session and fictional brand; database foreign keys reinforce those boundaries.
+- Cart and order amounts use integer USD cents. Unique rules prevent duplicate carts, event IDs, orders and per-lead recoveries.
+- Row Level Security is enabled. Direct anonymous and signed-in browser access to tables and state-changing functions is revoked. Only the server uses the Supabase secret key.
+- State changes and their activity entries happen inside one Postgres function, so a failed operation rolls back its partial work.
+- Inbound fake events use HMAC signatures. The demo screen signs its events on the server, so the signing secret never reaches the browser.
+- Expired sessions are removed when a new one is created; active sessions are capped at 25 leads and 120 events per brand.
+- **Before making the demo public, configure a host-level rate limit on session creation.** The database caps a visitor's lead and event volume, but session creation itself still needs protection from automated abuse.
+
+## AI development record
+
+See [`docs/AI_WORKFLOW.md`](docs/AI_WORKFLOW.md) for the actual tools used, the review attempt and the validation results. Claude Code was not used to generate or change this code in the current session, so the project does not claim that it was.
