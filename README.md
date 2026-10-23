@@ -39,6 +39,10 @@ The SQL checks cover duplicate events, changed event contents, recovery totals, 
 
 ## Try the one-minute demo
 
+![Recoverly demo showing a fictional recovered order](artifacts/demo-workflow.png)
+
+[Watch the 70-second browser walkthrough](artifacts/demo-walkthrough.webm).
+
 1. Choose a fictional brand and select **Add fake cart**.
 2. Claim the eligible lead as one of its fictional reps.
 3. Select **Simulate sale** to record a fake recovered order.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Rep = { id: string; name: string };
 type Recovery = { order_id: string; amount_cents: number } | null;
@@ -38,6 +38,7 @@ export default function DemoDashboard() {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const sessionInit = useRef<Promise<void> | null>(null);
 
   const brand = useMemo(() => state?.brands.find((item) => item.id === activeBrandId) ?? state?.brands[0], [state, activeBrandId]);
 
@@ -56,14 +57,15 @@ export default function DemoDashboard() {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        await fetch("/api/demo/session", { method: "POST" });
-        if (alive) await loadState();
-      } catch (cause) {
-        if (alive) setError(cause instanceof Error ? cause.message : "The demo could not start.");
-      }
-    })();
+    sessionInit.current ??= fetch("/api/demo/session", { method: "POST" }).then((response) => {
+      if (!response.ok) throw new Error("The demo could not start.");
+    });
+    sessionInit.current.then(() => {
+      if (alive) return loadState();
+    }).catch((cause: unknown) => {
+      sessionInit.current = null;
+      if (alive) setError(cause instanceof Error ? cause.message : "The demo could not start.");
+    });
     return () => { alive = false; };
   }, [loadState]);
 
