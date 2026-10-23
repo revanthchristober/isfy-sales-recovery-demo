@@ -4,6 +4,8 @@ This is a small backend and product demo for routing abandoned carts to sales re
 
 **Independent demo · Fake data · Simulated revenue**
 
+**[Open the live demo](https://isfy-sales-recovery-demo.vercel.app)**
+
 Every brand, rep, cart and order is fictional. The project contains no ISFY customer information and does not connect to real stores, calls, messages or payments.
 
 ## Run it locally
@@ -37,6 +39,8 @@ pnpm test:e2e
 
 The SQL checks cover duplicate events, changed event contents, recovery totals, access boundaries, database permissions and rollback. The concurrency check uses parallel connections to real Postgres for competing claims, suppression and repeated recovered orders. The browser test runs the visitor flow, reloads it, and checks a second visitor has an empty session. GitHub Actions runs the same checks with a fresh local Supabase stack.
 
+The production build and full browser flow were also verified on the live Vercel Hobby deployment. The hosted browser check recorded a simulated sale, rejected its replay, survived a refresh and verified a second visitor had separate data. GitHub Actions remains blocked by an account billing lock.
+
 ## Try the one-minute demo
 
 ![Recoverly demo showing a fictional recovered order](artifacts/demo-workflow.png)
@@ -67,7 +71,7 @@ The screen reloads its state from the current visitor session. It does not call 
 - State changes and their activity entries happen inside one Postgres function, so a failed operation rolls back its partial work.
 - Inbound fake events use HMAC signatures. The demo screen signs its events on the server, so the signing secret never reaches the browser.
 - Expired sessions are removed when a new one is created; active sessions are capped at 25 leads and 120 events per brand.
-- **Before making the demo public, configure a host-level rate limit on session creation.** The database caps a visitor's lead and event volume, but session creation itself still needs protection from automated abuse.
+- The live Vercel deployment rate-limits `POST /api/demo/session` and `/api/demo/session/reset` to 20 requests per IP per 10 minutes. Session creation itself has no database-side IP limit.
 
 ## AI development record
 
