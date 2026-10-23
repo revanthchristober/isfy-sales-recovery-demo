@@ -17,6 +17,16 @@ This project is an independent demo built with fake data. The current implementa
 - Added a browser walkthrough for adding a fake cart, claiming it, recording a sale, reloading, replaying the sale, and checking visitor isolation.
 - GitHub Actions is configured to run lint, TypeScript checks, SQL checks, Postgres concurrency checks, a production build, and the browser test against a clean local Supabase stack, then save browser evidence as a short-lived artifact.
 
+## Results from October 23, 2026
+
+- `pnpm lint`, `pnpm typecheck`, and `pnpm build` pass locally.
+- The browser test passed in Chrome against the dedicated free Supabase demo database. It checks fake-cart intake, claiming, simulated sale recording, repeat-sale protection, refresh persistence, and a separate visitor session.
+- The SQL and parallel-connection database checks passed earlier against local Postgres. They were not run against the hosted demo database to avoid leaving test records there.
+- The hosted demo database was created on the Free plan and both checked-in migrations were applied.
+- GitHub Actions did not start because GitHub marked the account as locked for a billing issue; there is no remote CI result.
+- The app is not deployed to a public web host yet. Vercel team access and the host-level session-creation rate limit still need to be set up before that.
+- The screenshot and 70-second recording in `artifacts/` come from the passing browser run.
+
 ## Notes for a real Claude Code session
 
 After re-authentication, use Claude Code to review the actual changed files and ask it to identify concrete correctness or security issues. Record its exact findings, the human decision for each one, any code changes, and the checks rerun afterward. Do not copy generic claims into this file; update it with the actual session results.
